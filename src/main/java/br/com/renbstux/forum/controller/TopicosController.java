@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.Optional;
 
 import javax.transaction.Transactional;
+import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -13,7 +14,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import br.com.renbstux.forum.controller.dto.DetalhesDoTopicoDto;
 import br.com.renbstux.forum.controller.dto.TopicoDto;
@@ -63,15 +63,13 @@ public class TopicosController {
 	@PostMapping
 	@Transactional
 	@CacheEvict(value = "listaDeTopicos", allEntries = true)
-	public ResponseEntity<TopicoDto> cadastrar(@RequestBody TopicoForm topicoForm) {
-		Topico topico = topicoForm.converter(cursoRepository);
+	public ResponseEntity<TopicoDto> cadastrar(@RequestBody @Valid TopicoForm form, UriComponentsBuilder uriBuilder) {
+		Topico topico = form.converter(cursoRepository);
 		topicoRepository.save(topico);
 		
-		URI uri = ServletUriComponentsBuilder
-						.fromCurrentRequest()
-						.path("/topicos/{id}")
-						.buildAndExpand(topico.getId())
-						.toUri();
+		URI uri = uriBuilder.path("/topicos/{id}")
+							.buildAndExpand(topico.getId())
+							.toUri();
 		return ResponseEntity.created(uri).body(new TopicoDto(topico));
 	}
 	
@@ -88,7 +86,7 @@ public class TopicosController {
 	@PutMapping("/{id}")
 	@Transactional
 	@CacheEvict(value = "listaDeTopicos", allEntries = true)
-	public ResponseEntity<TopicoDto> atualizar(@PathVariable("id") Long id, @RequestBody @Validated AtualizacaoTopicoForm form ) {
+	public ResponseEntity<TopicoDto> atualizar(@PathVariable("id") Long id, @RequestBody @Valid AtualizacaoTopicoForm form ) {
 		Optional<Topico> optional = topicoRepository.findById(id);
 		if (optional.isPresent()) {
 			Topico topico = form.atualizar(id, topicoRepository);
